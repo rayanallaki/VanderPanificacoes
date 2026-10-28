@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="VanderPanificacoes.Api/VanderPanificacoes.Api.csproj" />
+  <Project Path="VanderPanificacoes.Mobile/VanderPanificacoes.Mobile.csproj" />
+  <Project Path="VanderPanificacoes.Web/VanderPanificacoes.Web.csproj" />
+</Solution>

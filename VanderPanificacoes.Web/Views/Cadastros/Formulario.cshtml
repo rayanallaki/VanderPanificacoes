@@ -1,0 +1,14 @@
+@model CadastroForm
+@{ ViewData["Title"] = Model.Id.HasValue ? "Editar cadastro" : "Novo cadastro"; }
+<div class="page-heading"><div><span class="eyebrow">@Cadastros.Titulos[Model.Tipo]</span><h1>@ViewData["Title"]</h1><p>Preencha os dados e salve para disponibilizar na operação.</p></div><a class="button secondary" href="/cadastros/@Model.Tipo">Voltar à lista</a></div>
+<section class="card"><form method="post" action="/cadastros/@Model.Tipo/salvar">@Html.AntiForgeryToken()<input type="hidden" name="Id" value="@Model.Id" /><div asp-validation-summary="All" class="validation"></div><div class="form-grid">
+@foreach(var campo in Model.Campos)
+{
+    var valor = Model.Dados.GetValueOrDefault(campo.Nome) ?? "";
+    <div class="field"><label for="campo-@campo.Nome">@campo.Rotulo @if(campo.Obrigatorio){<span class="required" aria-hidden="true">*</span>}</label>
+    @if(campo.Tipo == "select") { <select id="campo-@campo.Nome" name="Dados[@campo.Nome]" required="@campo.Obrigatorio"><option value="">Selecione</option>@foreach(var opcao in Model.Opcoes[campo.Nome]) { <option value="@opcao.Valor" selected="@(opcao.Valor == valor)">@opcao.Texto</option> }</select> }
+    else if(campo.Tipo == "checkbox") { <input id="campo-@campo.Nome" type="checkbox" name="Dados[@campo.Nome]" value="true" checked="@(valor.Equals("true", StringComparison.OrdinalIgnoreCase))" /> }
+    else { <input id="campo-@campo.Nome" name="Dados[@campo.Nome]" type="@campo.Tipo" value="@(campo.Tipo == "password" ? "" : valor)" required="@campo.Obrigatorio" maxlength="@campo.Maximo" min="@campo.Min" step="@(campo.Tipo == "number" ? campo.Step ?? "1" : null)" minlength="@(campo.Tipo == "password" ? "8" : null)" autocomplete="@(campo.Tipo == "password" ? "new-password" : null)" /> }
+    </div>
+}
+</div><div class="actions"><button type="submit">Salvar cadastro</button><a class="button secondary" href="/cadastros/@Model.Tipo">Cancelar edição</a></div></form></section>

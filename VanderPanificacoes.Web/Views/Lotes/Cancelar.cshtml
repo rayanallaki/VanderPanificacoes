@@ -1,0 +1,4 @@
+@model CancelamentoForm
+@{ ViewData["Title"] = "Cancelar lote"; }
+<div class="page-heading"><div><span class="eyebrow">CANCELAMENTO</span><h1>Cancelar lote #@Model.Id</h1><p>O histórico será mantido, sem gerar vendas ou movimentação de estoque.</p></div></div>
+<section class="card narrow"><form method="post" action="/lotes/@Model.Id/cancelar">@Html.AntiForgeryToken()<input asp-for="Identificador" type="hidden" /><div asp-validation-summary="All" class="validation"></div><label>Motivo<textarea asp-for="Motivo" maxlength="500" required rows="4"></textarea></label><div class="actions"><button type="submit" class="danger">Confirmar cancelamento</button><a class="button secondary" href="/lotes/@Model.Id">Voltar sem cancelar</a></div></form></section>

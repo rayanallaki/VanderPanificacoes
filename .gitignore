@@ -1,0 +1,33 @@
+**/bin/
+**/obj/
+.vs/
+.vscode/
+*.user
+*.suo
+**/node_modules/
+tests/Web/artifacts/
+
+# Configurações locais e credenciais
+.env
+.env.*
+!.env.example
+**/secrets.json
+**/appsettings.*.local.json
+*.pfx
+*.p12
+*.key
+*.keystore
+*.jks
+
+# Bancos locais, logs e arquivos do sistema
+*.db
+*.db3
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+*.db3-shm
+*.db3-wal
+*.log
+.DS_Store
+Thumbs.db

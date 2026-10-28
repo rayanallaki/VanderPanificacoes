@@ -1,0 +1,293 @@
+@VanderPanificacoes.Api_HostAddress = http://localhost:5296
+
+### Carteira do vendedor autenticado; substitua pelo token de desenvolvimento
+GET {{VanderPanificacoes.Api_HostAddress}}/api/carteira/clientes
+Authorization: Bearer TOKEN_DO_VENDEDOR
+Accept: application/json
+
+###
+
+### Login de desenvolvimento: substitua por uma conta de teste e não compartilhe sua senha
+POST {{VanderPanificacoes.Api_HostAddress}}/api/autenticacao/login
+Content-Type: application/json
+
+{
+  "email": "vendedor@example.com",
+  "senha": "senha-de-teste"
+}
+
+###
+
+### Cancelamento de lote de teste recebido (confira o ID antes de executar)
+POST {{VanderPanificacoes.Api_HostAddress}}/api/lotes/1/cancelamento
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Content-Type: application/json
+
+{
+  "identificadorCancelamento": "2eaee81a-cee4-4948-9fce-94255aff99a1",
+  "usuarioId": 1,
+  "motivo": "Cancelamento de teste"
+}
+
+###
+
+### Recebimento integral de teste: verifique parcela, data, valor e IDs antes de executar
+POST {{VanderPanificacoes.Api_HostAddress}}/api/parcelas/1/recebimento
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Content-Type: application/json
+
+{
+  "identificadorRecebimento": "4a68c6ee-8cff-4b40-9ebd-4f3ca5086c14",
+  "usuarioId": 1,
+  "dataRecebimento": "2026-10-28",
+  "valorRecebido": 8.07,
+  "formaPagamentoRecebida": "Pix"
+}
+
+###
+
+### Parcelas e filtro por situação no ambiente de desenvolvimento
+GET {{VanderPanificacoes.Api_HostAddress}}/api/parcelas?situacao=Aberta
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Accept: application/json
+
+### Vendas geradas pelos lotes confirmados
+GET {{VanderPanificacoes.Api_HostAddress}}/api/vendas
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Accept: application/json
+
+### Data inicial inválida (esperado: 400)
+GET {{VanderPanificacoes.Api_HostAddress}}/api/parcelas?inicio=2026-12-31&fim=2026-01-01
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Accept: application/json
+
+###
+
+### Confirmação de lote de teste: grava venda e baixa estoque; ajuste os IDs antes de executar
+POST {{VanderPanificacoes.Api_HostAddress}}/api/lotes/1/confirmacao
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Content-Type: application/json
+
+{
+  "usuarioId": 1,
+  "itens": [{ "itemPedidoId": 1, "quantidadeAtendida": 1 }]
+}
+
+###
+
+### Conferência sem confirmação (substitua o ID do item pelo existente no lote)
+POST {{VanderPanificacoes.Api_HostAddress}}/api/lotes/1/conferencia
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Content-Type: application/json
+
+{
+  "itens": [{ "itemPedidoId": 1, "quantidadeAtendida": 1 }]
+}
+
+###
+
+### Simulação sem reserva de estoque
+GET {{VanderPanificacoes.Api_HostAddress}}/api/lotes/1/sugestao
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Accept: application/json
+
+###
+
+### Consulta de lotes no ambiente de desenvolvimento
+GET {{VanderPanificacoes.Api_HostAddress}}/api/lotes
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Accept: application/json
+
+###
+
+### Detalhes de lote existente
+GET {{VanderPanificacoes.Api_HostAddress}}/api/lotes/1
+Authorization: Bearer TOKEN_DO_VENDEDOR
+Accept: application/json
+
+### Lotes do vendedor autenticado
+GET {{VanderPanificacoes.Api_HostAddress}}/api/lotes/meus
+Authorization: Bearer TOKEN_DO_VENDEDOR
+Accept: application/json
+
+### Lote inexistente (esperado: 404)
+GET {{VanderPanificacoes.Api_HostAddress}}/api/lotes/99999999
+Authorization: Bearer TOKEN_DO_VENDEDOR
+Accept: application/json
+
+###
+
+### Consulta por identificador de envio do vendedor autenticado
+GET {{VanderPanificacoes.Api_HostAddress}}/api/lotes/envios/79f1563a-1b70-48ec-9d05-9ce73f5ee912
+Authorization: Bearer TOKEN_DO_VENDEDOR
+Accept: application/json
+
+###
+
+### Validação de lote sem gravação (ajuste os IDs e o preço aos dados locais)
+POST {{VanderPanificacoes.Api_HostAddress}}/api/lotes/validacao
+Authorization: Bearer TOKEN_DO_VENDEDOR
+Content-Type: application/json
+
+{
+  "identificadorEnvio": "79f1563a-1b70-48ec-9d05-9ce73f5ee912",
+  "vendedorId": 3,
+  "dataCriacaoLocal": "2026-10-27T12:00:00-03:00",
+  "visitas": [{ "clienteId": 1, "prioridadeOriginal": 1, "ordemAtendimento": 1, "situacao": "PedidoRegistrado", "dataHoraAtendimento": "2026-10-27T13:00:00-03:00" }],
+  "pedidos": [{ "clienteId": 1, "condicaoPagamentoId": 1, "formaPagamentoPrevista": "Pix", "itens": [{ "produtoId": 2, "quantidadeSolicitada": 1, "precoUnitario": 8.50 }] }]
+}
+
+###
+
+### Condições fixas de pagamento
+GET {{VanderPanificacoes.Api_HostAddress}}/api/condicoes-pagamento
+Authorization: Bearer TOKEN_DO_VENDEDOR
+Accept: application/json
+
+###
+
+### Consulta de clientes no ambiente de desenvolvimento
+GET {{VanderPanificacoes.Api_HostAddress}}/api/clientes
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Accept: application/json
+
+###
+
+### Pesquisa por nome e vendedor (ajuste os valores conforme seus dados)
+GET {{VanderPanificacoes.Api_HostAddress}}/api/clientes?nome=Mercado&vendedorId=3
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Accept: application/json
+
+### Pesquisa por parte do documento
+GET {{VanderPanificacoes.Api_HostAddress}}/api/clientes?documento=12345678
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Accept: application/json
+
+###
+
+### Desativação de cliente; confira o ID antes de executar
+PATCH {{VanderPanificacoes.Api_HostAddress}}/api/clientes/1/desativar
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+
+###
+
+### Reativação de cliente; confira o ID antes de executar
+PATCH {{VanderPanificacoes.Api_HostAddress}}/api/clientes/1/reativar
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+
+###
+
+### Edição de cliente: informe os dados completos e IDs existentes
+PUT {{VanderPanificacoes.Api_HostAddress}}/api/clientes/1
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Content-Type: application/json
+
+{
+  "vendedorId": 3,
+  "nome": "Mercado atualizado",
+  "documento": "12345678000190",
+  "cidade": "São Paulo",
+  "uf": "SP",
+  "prioridadeVisita": 1
+}
+
+###
+
+### Cadastro de cliente de teste; substitua vendedorId por um vendedor ativo
+POST {{VanderPanificacoes.Api_HostAddress}}/api/clientes
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Content-Type: application/json
+
+{
+  "vendedorId": 3,
+  "nome": "Mercado de teste",
+  "documento": "12345678000190",
+  "cidade": "São Paulo",
+  "uf": "SP",
+  "prioridadeVisita": 1
+}
+
+###
+
+### Consulta de vendedores no ambiente de desenvolvimento
+GET {{VanderPanificacoes.Api_HostAddress}}/api/vendedores
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Accept: application/json
+
+###
+
+### Desativação de vendedor (confira o ID antes de executar)
+PATCH {{VanderPanificacoes.Api_HostAddress}}/api/vendedores/2/desativar
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+
+###
+
+### Cadastro de vendedor de teste; substitua a senha e o e-mail localmente
+POST {{VanderPanificacoes.Api_HostAddress}}/api/vendedores
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Content-Type: application/json
+
+{
+  "nome": "Vendedor de teste",
+  "email": "vendedor@example.com",
+  "senha": "troque-esta-senha"
+}
+
+###
+
+### Edição de vendedor; substitua o ID e os dados conforme necessário
+PUT {{VanderPanificacoes.Api_HostAddress}}/api/vendedores/2
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Content-Type: application/json
+
+{
+  "nome": "Vendedor atualizado",
+  "email": "atualizado@example.com"
+}
+
+###
+
+### Histórico das movimentações do produto 2
+GET {{VanderPanificacoes.Api_HostAddress}}/api/estoque/movimentacoes?produtoId=2
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Accept: application/json
+
+### ID de produto inválido (esperado: 400)
+GET {{VanderPanificacoes.Api_HostAddress}}/api/estoque/movimentacoes?produtoId=0
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Accept: application/json
+
+###
+
+GET {{VanderPanificacoes.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+
+### Ajuste de entrada (use um novo UUID para cada operação intencional)
+POST {{VanderPanificacoes.Api_HostAddress}}/api/estoque/ajustes-entrada
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Content-Type: application/json
+
+{
+  "identificadorOperacao": "04a46fb6-467b-49d1-a328-829c128cd72a",
+  "produtoId": 2,
+  "usuarioId": 1,
+  "quantidade": 1,
+  "motivo": "Correção após contagem"
+}
+
+### Ajuste de saída (use um novo UUID para cada operação intencional)
+POST {{VanderPanificacoes.Api_HostAddress}}/api/estoque/ajustes-saida
+Authorization: Bearer TOKEN_DO_ADMINISTRADOR
+Content-Type: application/json
+
+{
+  "identificadorOperacao": "a2c78c42-718a-4bf5-8633-1b515ae1f620",
+  "produtoId": 2,
+  "usuarioId": 1,
+  "quantidade": 1,
+  "motivo": "Ajuste de teste"
+}
+
+###

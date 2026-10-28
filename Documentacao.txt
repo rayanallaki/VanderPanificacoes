@@ -1,0 +1,560 @@
+PROJETO ACADÊMICO — ROTA COMERCIAL
+Sistema de pedidos para uma distribuidora de alimentos
+Documentação funcional e técnica — Proposta inicial
+Versão: 1.0 | Data: 26/10/2026
+
+Aluno(a): _______________________________________________
+Curso / disciplina: _____________________________________
+
+1. OBJETIVO E ESCOPO
+
+Desenvolver um sistema para uma distribuidora que atende pequenos mercados,
+lanchonetes e padarias. O vendedor utilizará um aplicativo para consultar sua
+carteira de clientes, organizar os atendimentos e registrar pedidos durante
+as visitas. A loja acompanhará esses pedidos em uma aplicação web.
+
+Os pedidos registrados durante um ciclo de atendimento serão reunidos em um
+lote e enviados à API. Na loja, o administrador fará a conferência do estoque,
+definirá as quantidades que poderão ser atendidas e confirmará as vendas.
+As parcelas serão geradas com base nos valores efetivamente atendidos.
+
+O aplicativo deverá permitir continuar um atendimento sem conexão, desde que
+os dados necessários tenham sido sincronizados anteriormente. O envio dos
+pedidos e a confirmação das vendas dependerão de acesso à API.
+
+A primeira versão será acadêmica. Os recebimentos serão lançados manualmente,
+sem movimentação de dinheiro ou integração com bancos e serviços de pagamento.
+As funcionalidades abaixo representam o que será desenvolvido e testado.
+
+2. COMPONENTES, TECNOLOGIAS E ARQUITETURA
+
+Componente — Tecnologia — Responsabilidade
+
+- Aplicativo: C#, .NET MAUI e SQLite. Consulta local, atendimento dos clientes,
+  montagem dos pedidos e sincronização com a API.
+- API: C# e ASP.NET Core Web API. Autenticação, permissões, validações,
+  cálculos, confirmação das vendas e acesso ao banco central.
+- Aplicação web: ASP.NET Core MVC. Administração dos cadastros, conferência
+  dos lotes, controle do estoque e acompanhamento das parcelas.
+- Banco central: MySQL. Armazenamento dos dados oficiais do sistema.
+- Desenvolvimento: Visual Studio Code; Visual Studio quando necessário para
+  executar e depurar o aplicativo em Android.
+- Versionamento: Git, com repositório público no GitHub.
+
+A aplicação web e o aplicativo deverão consumir a API. As regras de negócio
+não poderão ser contornadas por acesso direto dessas aplicações ao MySQL.
+
+O SQLite armazenará cópias dos dados recebidos e os rascunhos do vendedor.
+O MySQL será a fonte oficial dos cadastros, pedidos recebidos, vendas e parcelas.
+
+O aplicativo será preparado para Android e Windows. A entrega deverá informar
+em qual plataforma os testes integrados foram efetivamente realizados.
+
+3. PERFIS E PERMISSÕES
+
+3.1. Administrador — aplicação web
+
+- Acessa o sistema com uma conta administrativa previamente criada.
+- Cadastra e desativa vendedores, clientes, categorias e produtos.
+- Define a carteira de cada vendedor e a prioridade sugerida das visitas.
+- Registra entradas e ajustes de estoque, sempre com motivo.
+- Consulta lotes enviados e confere as quantidades solicitadas.
+- Ajusta a quantidade atendida de cada item antes de confirmar o lote.
+- Cancela lotes ainda não confirmados, informando o motivo.
+- Consulta vendas e parcelas em aberto, vencidas ou pagas.
+- Registra manualmente o recebimento integral de uma parcela.
+
+3.2. Vendedor — aplicativo
+
+- Entra com uma conta cadastrada pelo administrador.
+- Sincroniza sua carteira, catálogo e informações necessárias ao atendimento.
+- Consulta clientes por nome ou documento e produtos por nome ou categoria.
+- Escolhe um cliente pendente no ciclo e registra o atendimento.
+- Monta pedidos, salva rascunhos e retoma o trabalho posteriormente.
+- Registra quando uma visita termina sem pedido, indicando o motivo.
+- Envia o lote e acompanha os resultados da conferência da loja.
+- Cadastra novos clientes quando estiver conectado à API.
+
+3.3. Cliente
+
+O cliente representa o estabelecimento atendido pela distribuidora. Não terá
+login próprio nesta versão. Cada cliente terá um vendedor responsável.
+O cadastro conterá nome, documento, contato e endereço.
+
+4. CARTEIRA E CICLO DE ATENDIMENTO
+
+4.1. O administrador vincula os clientes a um vendedor e define uma prioridade
+     de visita. Essa prioridade será uma sugestão de organização do trabalho.
+4.2. O vendedor poderá atender os clientes pendentes em outra ordem. A escolha
+     será registrada no ciclo, permitindo consultar como ocorreram as visitas.
+4.3. Cada novo ciclo cria um retrato da lista de clientes e das prioridades
+     sincronizadas. Alterações posteriores na carteira não reordenam um ciclo
+     já iniciado. A API continua verificando o vínculo atual no envio.
+4.4. Cada visita poderá terminar com um pedido ou sem pedido. Os motivos para
+     encerrar sem pedido serão: estabelecimento fechado, cliente ausente,
+     cliente não comprará ou outro motivo, com observação obrigatória.
+4.5. Uma visita encerrada sem pedido poderá ser reaberta enquanto o lote não
+     estiver enviado nem tiver uma tentativa de envio sem resultado conhecido.
+4.6. Um cliente poderá ter, no máximo, um pedido no mesmo lote. O vendedor
+     poderá editar esse pedido antes do envio.
+4.7. O lote ficará pronto para envio quando todas as visitas estiverem
+     encerradas e houver pelo menos um pedido válido.
+4.8. Um ciclo em que ninguém comprou será encerrado no aplicativo como
+     EncerradoSemPedidos. Não será enviado um lote vazio à API.
+4.9. Será possível manter vários rascunhos, mas apenas um ciclo ficará ativo
+     para atendimento por vez. Os demais poderão ser retomados depois.
+4.10. Fechar o aplicativo ou sair da conta não apaga os rascunhos. Eles devem
+      permanecer vinculados ao vendedor que os criou.
+4.11. O vendedor poderá iniciar outro ciclo depois de encerrar o anterior,
+      inclusive no mesmo dia. Ciclos diferentes terão identificadores próprios.
+
+5. FLUXO ESPERADO
+
+5.1. Atendimento pelo aplicativo
+
+1. O vendedor faz login enquanto estiver conectado.
+2. O aplicativo sincroniza clientes, produtos e condições de pagamento.
+3. O vendedor inicia ou retoma um ciclo salvo no SQLite.
+4. Seleciona um cliente pendente e consulta seus dados e pedidos anteriores.
+5. Adiciona produtos, informa quantidades e escolhe a condição de pagamento.
+6. O aplicativo apresenta o subtotal e o total previsto.
+7. Ao salvar, o pedido fica no SQLite. Essa ação não envia dados nem reserva
+   estoque no banco central.
+8. O vendedor continua os atendimentos ou encerra visitas sem pedido.
+9. Após concluir o ciclo, revisa o lote e solicita o envio quando houver conexão.
+10. O aplicativo transmite o identificador do lote, as visitas e os pedidos.
+11. Se a API confirmar o recebimento, o lote local passa para Enviado.
+12. Se houver falha, os dados permanecem salvos para consulta e nova tentativa.
+
+5.2. Recebimento pela API
+
+13. A API identifica o vendedor autenticado e valida sua conta e seus clientes.
+14. Confere as visitas, os produtos, as quantidades e a condição de pagamento.
+15. Compara os preços informados com os preços oficiais. Se houver diferença,
+    rejeita o lote e informa os itens que precisam ser atualizados.
+16. Grava o lote, as visitas, os pedidos e os itens em uma única transação.
+17. Se qualquer pedido for inválido, nenhum pedido daquele lote será gravado.
+18. O recebimento do lote não gera venda, parcelas ou baixa de estoque.
+
+Se um cliente tiver sido desativado ou transferido para outro vendedor antes
+do envio, a API deverá rejeitar o lote e identificar o cadastro envolvido.
+O rascunho será preservado para ajuste; nenhum pedido será descartado em silêncio.
+
+5.3. Conferência pela loja
+
+19. O administrador consulta os lotes recebidos por vendedor, data e situação.
+20. Abre um lote e solicita a sugestão de atendimento dos pedidos.
+21. Confere o estoque e altera as quantidades que serão atendidas, se necessário.
+22. A web apresenta os cortes, os totais finais e a previsão das parcelas.
+23. Ao confirmar, a API valida novamente o estoque e a validade dos produtos.
+24. Em uma transação, registra as vendas, baixa o estoque atendido e gera
+    as parcelas apenas dos pedidos com algum item atendido.
+25. Se a proposta não puder mais ser atendida, a confirmação é rejeitada e
+    a loja deverá revisar o lote. Não haverá cortes adicionais silenciosos.
+26. O administrador também poderá cancelar um lote Recebido, indicando o motivo.
+
+5.4. Acompanhamento
+
+27. O vendedor sincroniza o resultado e consulta o que foi solicitado,
+    atendido ou cortado em cada pedido.
+28. A loja acompanha as parcelas e registra os recebimentos manualmente.
+
+6. CONFERÊNCIA E DISTRIBUIÇÃO DO ESTOQUE
+
+6.1. A sugestão inicial considerará a ordem dos pedidos dentro do lote.
+     A API atribuirá a SequenciaPedido ao receber a lista e manterá essa
+     sequência registrada para as próximas consultas.
+6.2. Para cada produto, o sistema atende o primeiro pedido até o limite
+     solicitado, desconta esse valor do saldo da simulação e passa ao próximo.
+6.3. Quando o saldo da simulação acabar, os pedidos seguintes receberão
+     quantidade sugerida igual a zero para aquele produto.
+6.4. O administrador poderá redistribuir as quantidades entre os pedidos.
+     A sugestão não fará reserva e não será uma confirmação automática.
+6.5. Para cada item, a quantidade atendida deverá ficar entre zero e a
+     quantidade solicitada. A soma atendida de um produto no lote não poderá
+     superar o estoque disponível no momento da confirmação.
+6.6. Exemplo: três pedidos solicitam 4, 6 e 5 unidades, nessa ordem. Com saldo
+     de 10, a sugestão será 4, 6 e 0. A loja poderá alterar para 3, 4 e 3,
+     pois a soma continua sendo 10 e nenhum pedido ultrapassa o solicitado.
+6.7. A quantidade cortada será a diferença entre solicitado e atendido.
+     O histórico manterá as duas quantidades.
+6.8. Pedido totalmente cortado ficará NaoAtendido e não gerará venda nem parcelas.
+6.9. O estoque só será alterado na confirmação do lote. Uma confirmação repetida
+     não poderá duplicar vendas, parcelas ou baixa de estoque.
+6.10. Confirmações concorrentes deverão ser protegidas por transações e
+      bloqueios ou atualizações condicionais. O estoque nunca poderá ser negativo.
+6.11. Após o recebimento, os preços registrados no pedido serão preservados.
+      A confirmação usará esses preços históricos e verificará novamente estoque,
+      situação ativa e validade. Produtos desativados ou vencidos só poderão
+      ter quantidade atendida igual a zero.
+
+7. PRODUTOS E VALIDADE
+
+7.1. Os produtos terão nome, categoria, descrição, unidade de venda, preço,
+     estoque, situação e, quando aplicável, data de validade.
+7.2. A unidade de venda poderá ser unidade, pacote ou caixa. As quantidades
+     serão sempre inteiras, conforme a unidade cadastrada. Não haverá conversão
+     automática entre caixas, pacotes e unidades.
+7.3. Produtos perecíveis exigirão data de validade. Para os demais, esse campo
+     poderá ficar vazio.
+7.4. Cada registro manterá um único saldo e uma única validade. O controle
+     detalhado de lotes de fabricação ficará fora da primeira versão.
+7.5. Produtos com validades diferentes precisarão de registros separados,
+     identificados claramente no catálogo, enquanto não houver controle por lote.
+7.6. Produtos com validade anterior à data da confirmação não poderão ser
+     atendidos. A data do próprio dia será considerada válida até seu término.
+7.7. A loja poderá filtrar produtos vencidos e os que vencem nos próximos
+     7, 15 ou 30 dias. Produtos sem validade não entram nesses filtros.
+7.8. A confirmação usará a data de referência da loja, no fuso America/Sao_Paulo.
+7.9. Entradas e ajustes de estoque exigirão quantidade, motivo, usuário e data.
+     Um ajuste de saída não poderá deixar o saldo negativo. O histórico das
+     movimentações será preservado.
+
+8. CONDIÇÕES DE PAGAMENTO E RECEBIMENTOS
+
+8.1. A primeira versão terá três condições fixas:
+     - À vista: uma parcela no dia da confirmação, com desconto de 5%.
+     - 7/14 dias: duas parcelas iguais, sem desconto.
+     - 14/28/42 dias: três parcelas iguais, sem desconto.
+8.2. Cada pedido terá uma condição e uma forma de pagamento prevista:
+     Pix, dinheiro, cartão ou boleto. A forma será aplicada às suas parcelas.
+8.3. O desconto à vista será aplicado sobre o total efetivamente atendido,
+     e não sobre o total originalmente solicitado.
+8.4. O total líquido será dividido em centavos. A última parcela receberá
+     a diferença de arredondamento, mantendo a soma igual ao total da venda.
+8.5. Exemplo: R$ 100,00 em três parcelas resulta em R$ 33,33, R$ 33,33
+     e R$ 33,34. À vista, o mesmo total gera uma parcela de R$ 95,00.
+8.6. As datas de vencimento serão calculadas a partir da data de confirmação
+     da venda. Antes dela, o aplicativo mostrará apenas valores previstos.
+8.7. O pagamento à vista também dependerá de registro manual. Uma venda
+     confirmada não significa que o dinheiro foi recebido.
+8.8. O administrador registrará a data e a forma efetiva do recebimento,
+     que poderá ser diferente da prevista. O valor recebido deverá ser igual
+     ao valor integral da parcela. Não haverá recebimento parcial nesta versão.
+8.9. A data de recebimento não poderá ser anterior à confirmação da venda
+     nem posterior à data atual da loja.
+8.10. Uma parcela aberta com vencimento anterior à data atual será exibida
+      como Vencida. No próprio dia do vencimento, permanecerá Aberta.
+8.11. Não serão calculados juros, multa ou desconto por antecipação. Um
+      recebimento antecipado quitará o mesmo valor base da parcela.
+8.12. Não haverá bloqueio automático de compra por inadimplência nem limite
+      de crédito. A loja poderá consultar as pendências antes de confirmar.
+8.13. As formas de pagamento são informações de controle. Não serão gerados
+      boletos, cobranças Pix, links de cartão ou liquidações bancárias reais.
+
+9. MODELOS E RELACIONAMENTOS
+
+Os campos abaixo orientam a modelagem inicial. As tabelas do MySQL terão
+chaves primárias, chaves estrangeiras e restrições compatíveis com as regras.
+
+Usuario
+Id, Nome, Email, SenhaHash, Perfil, Ativo.
+Email será único. Os perfis serão Administrador e Vendedor.
+
+Cliente
+Id, VendedorId, Nome, Documento, Telefone, Email, Rua, Numero, Complemento,
+Bairro, Cidade, UF, CEP, PrioridadeVisita, Ativo.
+O documento normalizado será único. Cidade e UF serão campos do endereço;
+não haverá módulo separado de cadastro de localidades.
+
+Categoria
+Id, Nome, Ativo.
+
+Produto
+Id, CategoriaId, Nome, Descricao, UnidadeVenda, Preco, Estoque, Perecivel,
+DataValidade, Ativo.
+
+CondicaoPagamento
+Id, Nome, QuantidadeParcelas, PrazosDias, PercentualDesconto.
+Os três planos serão cadastrados na preparação do banco e não serão editáveis
+pelos usuários na primeira versão. Seus dados serão copiados para o pedido.
+
+LotePedidos
+Id, IdentificadorEnvio, VendedorId, DataCriacaoLocal, DataRecebimento,
+DataConfirmacao, Situacao, MotivoCancelamento, UsuarioConfirmacaoId.
+O identificador de envio será um UUID único no banco central.
+
+Visita
+Id, LotePedidosId, ClienteId, PrioridadeOriginal, OrdemAtendimento, Situacao,
+MotivoSemPedido, Observacao, DataHoraAtendimento.
+Um cliente terá apenas uma visita por lote.
+
+Pedido
+Id, LotePedidosId, ClienteId, SequenciaPedido, CondicaoPagamentoId,
+NomeCondicaoSnapshot, PrazosDiasSnapshot, PercentualDescontoSnapshot,
+FormaPagamentoPrevista, Observacao, TotalPrevisto, TotalAtendido,
+Desconto, TotalFinal, Situacao.
+No máximo um pedido por cliente em cada lote.
+
+ItemPedido
+Id, PedidoId, ProdutoId, NomeProdutoSnapshot, UnidadeVendaSnapshot,
+PrecoUnitario, QuantidadeSolicitada, QuantidadeAtendida, SubtotalAtendido.
+Um produto aparecerá apenas uma vez por pedido.
+
+Venda
+Id, PedidoId, DataConfirmacao, TotalBruto, Desconto, TotalLiquido.
+Cada pedido com atendimento positivo terá uma única venda. Seus itens
+atendidos serão consultados nos ItemPedido, preservados após a confirmação.
+
+Parcela
+Id, VendaId, Numero, Vencimento, ValorBase, Situacao,
+FormaPagamentoPrevista, FormaPagamentoRecebida, DataRecebimento,
+ValorRecebido, UsuarioRecebimentoId.
+A combinação VendaId e Numero será única.
+
+MovimentacaoEstoque
+Id, ProdutoId, Tipo, Quantidade, Motivo, DataHora, UsuarioId, VendaIdOpcional.
+O tipo identificará Entrada, AjusteEntrada, AjusteSaida ou Venda.
+A quantidade será positiva; o tipo definirá se soma ou diminui o saldo.
+
+Dados exclusivos do SQLite
+
+- Cópias do catálogo, clientes e condições de pagamento sincronizados.
+- Rascunhos de lotes, visitas, pedidos e itens, vinculados ao vendedor.
+- Identificador estável de envio e situação da tentativa de sincronização.
+- Data da última sincronização concluída de cada conjunto de dados.
+
+Tipos previstos
+
+- Identificadores centrais: INT ou BIGINT, gerados pelo banco.
+- Identificadores de envio: UUID, representado por CHAR(36).
+- Preços unitários: DECIMAL(10,2); totais e parcelas: DECIMAL(12,2).
+- Quantidades: INT; valores lógicos: BOOLEAN.
+- Datas de validade e vencimento: DATE; eventos: DATETIME(6), armazenados em UTC.
+- Nomes: VARCHAR(100); email: VARCHAR(150); documento: VARCHAR(20).
+- Situações: VARCHAR(30), com valores permitidos validados na API e no banco.
+
+As quantidades solicitadas devem ser positivas. Quantidades atendidas e
+estoques podem ser zero. Preços, descontos e totais nunca serão negativos.
+A API rejeitará valores que excedam a capacidade dos campos numéricos.
+
+Relacionamentos principais
+
+- Um vendedor possui vários clientes e vários lotes.
+- Um lote possui várias visitas e vários pedidos.
+- Uma visita tem zero ou um pedido, para o mesmo cliente e lote.
+- Um cliente pode ter vários pedidos, em lotes diferentes.
+- Um pedido possui vários itens, e cada item referencia um produto.
+- Um pedido gera zero ou uma venda.
+- Uma venda possui uma ou mais parcelas.
+- Um produto possui várias movimentações de estoque.
+
+10. SITUAÇÕES E TRANSIÇÕES
+
+10.1. Lote no aplicativo
+
+Rascunho: atendimento e edição dos pedidos ainda permitidos.
+Pausado: dados salvos para retomar o ciclo depois.
+ProntoParaEnvio: visitas concluídas e pelo menos um pedido válido.
+EnvioPendente: tentativa realizada, mas ainda sem resultado confirmado.
+Enviado: recebimento confirmado pela API; edição local bloqueada.
+EncerradoSemPedidos: todas as visitas concluídas e nenhum pedido registrado.
+
+Rascunho e Pausado podem alternar. Um lote pronto pode voltar para edição
+antes da primeira tentativa de envio. EnvioPendente exige consulta à API pelo
+identificador; enquanto o resultado for incerto, a edição fica bloqueada.
+
+10.2. Lote na API e na web
+
+Recebido passa para Confirmado ou Cancelado.
+Confirmado e Cancelado serão estados finais na primeira versão.
+Um lote confirmado não poderá ser cancelado por essa funcionalidade.
+
+10.3. Visita
+
+Pendente passa para PedidoRegistrado ou SemPedido.
+Antes do envio, uma visita SemPedido poderá voltar para Pendente.
+Remover um pedido deixará a visita novamente Pendente.
+
+10.4. Pedido
+
+Recebido passa para AtendidoTotal, AtendidoParcial ou NaoAtendido.
+Se o lote for cancelado, todos os seus pedidos passam para Cancelado.
+
+10.5. Parcela
+
+Aberta passa para Paga por lançamento manual do administrador.
+Vencida será uma condição de exibição derivada da data de vencimento de
+uma parcela ainda aberta. Uma parcela paga não poderá ser recebida novamente.
+
+11. REQUISITOS FUNCIONAIS
+
+RF01. Permitir login e acesso conforme os perfis Administrador e Vendedor.
+RF02. Cadastrar, editar e desativar vendedores, clientes, categorias e produtos.
+RF03. Vincular clientes a vendedores e definir prioridades sugeridas de visita.
+RF04. Permitir cadastro de cliente pelo vendedor quando houver conexão.
+RF05. Sincronizar catálogo, carteira, condições e resultados dos pedidos.
+RF06. Pesquisar clientes por nome ou documento e produtos por nome ou categoria.
+RF07. Criar ciclos com a lista de clientes e registrar o progresso das visitas.
+RF08. Registrar pedidos ou encerrar visitas sem pedido, com motivo.
+RF09. Salvar, pausar e retomar rascunhos no SQLite, inclusive após fechar o app.
+RF10. Adicionar produtos, alterar quantidades e remover itens do pedido local.
+RF11. Exibir subtotais, total previsto, condição de pagamento e parcelas previstas.
+RF12. Revisar, editar ou remover pedidos antes do envio do lote.
+RF13. Transmitir lotes concluídos e preservar os dados locais em caso de falha.
+RF14. Validar e registrar o lote integralmente na API, sem duplicar reenvios.
+RF15. Consultar lotes na web por vendedor, período e situação.
+RF16. Sugerir atendimento do estoque pela sequência dos pedidos e permitir ajustes.
+RF17. Mostrar solicitado, atendido, cortado e valores finais de cada pedido.
+RF18. Confirmar o lote, gerar vendas e parcelas e atualizar o estoque em transação.
+RF19. Cancelar lotes Recebidos, com motivo obrigatório.
+RF20. Registrar entradas e ajustes de estoque com motivo e histórico.
+RF21. Identificar produtos vencidos e próximos do vencimento.
+RF22. Consultar parcelas por cliente, período de vencimento e situação.
+RF23. Registrar o recebimento integral de parcelas e consultar valores recebidos.
+RF24. Consultar no aplicativo o histórico de pedidos e os resultados da loja.
+RF25. Exibir mensagens para ausência de dados, falta de conexão, divergências
+      de preço, cadastros desativados e operações não autorizadas.
+
+12. REQUISITOS NÃO FUNCIONAIS
+
+RNF01. O aplicativo permitirá consultar dados sincronizados e editar rascunhos
+       sem conexão. Login, novos cadastros e transmissões exigirão API disponível.
+RNF02. Cada vendedor acessará somente sua carteira e seus rascunhos. A API
+       verificará identidade, perfil e vínculo em todas as operações protegidas.
+RNF03. As senhas serão armazenadas por um mecanismo próprio para senhas,
+       com hash e sal, como o PasswordHasher do ASP.NET Core.
+RNF04. Credenciais e configurações secretas ficarão fora do repositório público.
+       A comunicação em ambiente publicado deverá utilizar HTTPS.
+RNF05. O MySQL garantirá integridade referencial, unicidade e restrições de
+       valores. Registros históricos não serão removidos por desativação.
+RNF06. Recebimento do lote, confirmação de vendas, ajustes de estoque e
+       recebimentos financeiros deverão ser transacionais quando alterarem
+       vários registros relacionados.
+RNF07. Falhas de conexão não deverão encerrar o aplicativo ou apagar rascunhos.
+       O progresso local será salvo a cada operação de atendimento concluída.
+RNF08. Os cálculos monetários usarão decimal. O arredondamento será explícito,
+       em duas casas e com MidpointRounding.AwayFromZero nos pontos definidos
+       pela API: subtotais, desconto e valores das parcelas.
+RNF09. Eventos serão armazenados em UTC e apresentados no horário da loja.
+       Validades e vencimentos usarão datas de calendário no fuso da loja.
+RNF10. O catálogo e a carteira poderão ser reutilizados sem baixar tudo em
+       cada abertura. A sincronização será manual e também tentada após o login
+       e ao retomar o app, quando a última atualização tiver mais de 15 minutos.
+       Uma atualização com falha preservará o último conjunto válido.
+RNF11. Catálogo exibido no aplicativo não representa reserva nem garantia de
+       estoque. As telas distinguirão previsão local e resultado confirmado.
+RNF12. Os componentes deverão compilar e passar pelos cenários integrados
+       de envio, conferência, persistência, concorrência e controle de acesso.
+
+13. REGRAS DE NEGÓCIO E INTEGRIDADE
+
+RN01. Somente contas ativas poderão autenticar e transmitir novas operações.
+RN02. Clientes e produtos desativados não poderão ser usados em novos pedidos.
+RN03. Um lote terá no máximo um pedido por cliente e um item por produto em
+      cada pedido. Adicionar o mesmo produto novamente somará as quantidades.
+RN04. Pedidos vazios, quantidades solicitadas não positivas e condições ou
+      formas de pagamento desconhecidas serão rejeitados.
+RN05. A API calculará os valores oficiais. Os valores do aplicativo servirão
+      como previsão até o recebimento e a conferência do lote.
+RN06. Nome, unidade, preço e condição de pagamento serão preservados no pedido
+      recebido. Mudanças futuras de cadastro não modificarão esse histórico.
+RN07. Cada lote terá um identificador de envio persistido no SQLite. Repetir
+      o mesmo identificador e conteúdo retornará o lote existente, sem duplicação.
+      Reutilizar o identificador com conteúdo diferente será rejeitado.
+RN08. Se a resposta do envio se perder, o aplicativo consultará o lote pelo
+      identificador. Reenvios usarão o mesmo identificador e conteúdo enquanto
+      houver dúvida sobre o recebimento, inclusive após fechar e reabrir o app.
+RN09. Uma rejeição definitiva da API libera a correção do rascunho. Se o
+      conteúdo for alterado, a próxima transmissão terá novo identificador.
+RN10. A confirmação será indivisível: todas as vendas, parcelas, movimentações
+      e baixas do lote serão gravadas, ou nenhuma dessas alterações será mantida.
+RN11. O estoque não poderá ficar negativo, mesmo com operações simultâneas.
+      Confirmações, ajustes e lançamentos repetidos não duplicarão seus efeitos;
+      as mutações terão identificadores únicos quando houver possibilidade de
+      reenvio. Uma nova ação intencional usará outro identificador.
+RN12. Um lote cancelado antes da confirmação não gera baixa nem recebíveis.
+      Um lote sem nenhuma quantidade atendida não poderá ser confirmado;
+      deverá ser cancelado com motivo.
+RN13. A soma das parcelas será exatamente igual ao total líquido da venda.
+RN14. Receber uma parcela já paga será uma operação sem novo efeito financeiro.
+      Um lançamento conflitante será rejeitado e o registro anterior preservado.
+RN15. Não haverá exclusão física de cadastros utilizados em pedidos ou vendas.
+      A manutenção será feita por edição ou desativação conforme o campo.
+RN16. Depois da confirmação, itens e valores do pedido não poderão ser editados.
+      Correções ou devoluções posteriores ficarão fora da primeira versão.
+RN17. O cadastro online de um cliente é independente do envio do lote: se o
+      cadastro foi concluído, uma falha no lote não deverá apagar esse cliente.
+RN18. Novos clientes cadastrados após o início de um ciclo poderão ser incluídos
+      no próximo ciclo, evitando alterar a lista do atendimento em andamento.
+RN19. O administrador inicial será criado na preparação do ambiente. Novas
+      contas administrativas não serão oferecidas em cadastro público.
+
+14. TELAS PREVISTAS
+
+Aplicativo
+
+- Login e identificação do vendedor.
+- Início, com última sincronização e acesso aos ciclos.
+- Carteira de clientes, pesquisa e prioridade sugerida.
+- Dados do cliente e histórico de pedidos.
+- Catálogo por categoria, com pesquisa e validade quando aplicável.
+- Carrinho, observação e condição de pagamento.
+- Resumo do ciclo, visitas pendentes e pedidos registrados.
+- Resultado do lote, cortes e histórico.
+
+Aplicação web
+
+- Login administrativo.
+- Painel com lotes pendentes e parcelas em aberto.
+- Vendedores e carteiras de clientes.
+- Clientes e categorias.
+- Produtos, estoque, validade e movimentações.
+- Lotes recebidos e tela de conferência.
+- Vendas confirmadas e consulta de itens.
+- Parcelas, filtros e lançamento de recebimento.
+
+15. LIMITES DA PRIMEIRA VERSÃO
+
+- Não haverá portal ou aplicativo próprio para o cliente.
+- O roteiro será uma lista de prioridades, sem GPS ou cálculo de distância.
+- Não haverá controle de fabricação, múltiplos lotes por produto ou conversão
+  de unidades de venda.
+- As condições de pagamento serão fixas, sem cadastro de planos personalizados.
+- Não haverá pagamento real, emissão fiscal, integração bancária ou cobrança
+  automática. Os recebimentos serão apenas registros acadêmicos.
+- Não haverá juros, multa, renegociação, recebimento parcial ou limite de crédito.
+- Não haverá cancelamento após confirmação, devolução ou estorno financeiro.
+- O sistema não controlará separação física, transporte ou entrega ao cliente.
+- Catálogo e carteira poderão ser sincronizados integralmente na primeira
+  versão. A sincronização incremental poderá ser acrescentada depois.
+- O aplicativo não precisará executar sincronizações em segundo plano quando
+  estiver fechado. As tentativas ocorrerão durante o uso, conforme RNF10.
+- Relatórios iniciais serão consultas e filtros nas telas, sem necessidade de
+  geração de PDF, planilhas ou indicadores avançados.
+
+16. CRITÉRIOS DE ACEITAÇÃO
+
+CA01. Fechar e reabrir o aplicativo mantém o ciclo, os itens e as visitas salvos.
+CA02. Um vendedor não visualiza os rascunhos ou a carteira de outro vendedor.
+CA03. Sem conexão, o vendedor consulta dados sincronizados e salva pedidos;
+      o envio fica pendente sem apagar o trabalho local.
+CA04. O vendedor pode atender clientes pendentes fora da prioridade sugerida,
+      e o histórico mantém a ordem efetiva do atendimento.
+CA05. Visitas pendentes impedem o envio. Visita SemPedido pode ser reaberta
+      antes da transmissão; um ciclo sem pedidos é encerrado localmente.
+CA06. Uma diferença de preço faz a API rejeitar todo o lote e identificar o
+      item envolvido. Nenhum pedido desse lote fica gravado parcialmente.
+CA07. Reenviar o mesmo lote após perder a resposta não duplica pedidos,
+      inclusive quando o aplicativo é reiniciado antes da consulta do resultado.
+CA08. Com solicitações de 4, 6 e 5 e saldo de 10, a sugestão é 4, 6 e 0.
+      A alteração para 3, 4 e 3 é aceita; uma soma maior que 10 é rejeitada.
+CA09. Produto vencido ou desativado não pode ter atendimento positivo.
+      Os demais itens poderão ser atendidos após a revisão da loja.
+CA10. Pedido totalmente cortado não gera venda nem parcelas. Um pedido parcial
+      gera valores somente sobre o que foi atendido.
+CA11. Uma venda de R$ 100,00 à vista gera uma parcela de R$ 95,00, inicialmente
+      em aberto, até o registro manual do recebimento.
+CA12. Uma venda de R$ 100,00 na condição 14/28/42 gera parcelas de R$ 33,33,
+      R$ 33,33 e R$ 33,34, nas datas correspondentes à confirmação.
+CA13. Repetir uma confirmação não produz nova baixa, movimentação ou parcela.
+      Duas confirmações que disputem o mesmo estoque não deixam saldo negativo.
+CA14. Cancelar um lote Recebido preserva o histórico, sem movimentar estoque.
+CA15. Registrar o recebimento de uma parcela já paga não duplica o valor recebido.
+CA16. Um ajuste de saída superior ao saldo é rejeitado. Um ajuste válido fica
+      registrado com motivo, usuário e data.
+CA17. O teste integrado demonstra a comunicação entre aplicativo, API, web
+      e MySQL, registrando a plataforma e o dispositivo utilizados.
+
+Esta documentação servirá de base para a modelagem do banco e a implementação.
+Mudanças no escopo deverão atualizar os requisitos e os cenários correspondentes.

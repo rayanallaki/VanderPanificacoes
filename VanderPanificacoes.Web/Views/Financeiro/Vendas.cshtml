@@ -1,0 +1,6 @@
+@model List<JsonObject>
+@{ ViewData["Title"] = "Vendas"; }
+<div class="page-heading"><div><span class="eyebrow">FINANCEIRO</span><h1>Vendas confirmadas</h1><p>Valores oficiais dos pedidos atendidos pela loja.</p></div></div><section class="card"><div class="table-wrap"><table><thead><tr><th>Venda</th><th>Cliente</th><th>Confirmação</th><th>Bruto</th><th>Desconto</th><th>Total</th><th>Origem</th></tr></thead><tbody>
+@foreach(var v in Model){<tr><td>#@Ui.Id(v)</td><td>@Ui.Texto(v,"cliente")</td><td>@Ui.Data(v["dataConfirmacao"])</td><td>@Ui.Moeda(Ui.Valor(v,"totalBruto"))</td><td>@Ui.Moeda(Ui.Valor(v,"desconto"))</td><td><strong>@Ui.Moeda(Ui.Valor(v,"totalLiquido"))</strong></td><td><a href="/lotes/@Ui.Id(v,"lotePedidosId")">Ver lote</a></td></tr>}
+@if(Model.Count==0){<tr><td colspan="7" class="empty">Nenhuma venda confirmada.</td></tr>}
+</tbody></table></div></section>

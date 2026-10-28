@@ -1,0 +1,29 @@
+@model EstoqueForm
+@{ ViewData["Title"] = "Registrar movimentação"; }
+<div class="page-heading">
+    <div><span class="eyebrow">ESTOQUE</span><h1>Registrar movimentação</h1><p>O saldo será atualizado pela API, com motivo e responsável.</p></div>
+</div>
+<section class="card narrow">
+    <form method="post" action="/estoque/novo">
+        @Html.AntiForgeryToken()
+        <input asp-for="Identificador" type="hidden" />
+        <div asp-validation-summary="All" class="validation"></div>
+        <div class="field">
+            <label for="ProdutoId">Produto</label>
+            <select asp-for="ProdutoId" required>
+                <option value="">Selecione</option>
+                @foreach (var produto in Model.Produtos)
+                {
+                    <option value="@Ui.Id(produto)">@Ui.Texto(produto,"nome") · saldo @Ui.Texto(produto,"estoque")</option>
+                }
+            </select>
+        </div>
+        <div class="field">
+            <label for="Tipo">Tipo</label>
+            <select asp-for="Tipo"><option value="entradas">Entrada de estoque</option><option value="ajustes-entrada">Ajuste de entrada</option><option value="ajustes-saida">Ajuste de saída</option></select>
+        </div>
+        <div class="field"><label for="Quantidade">Quantidade</label><input asp-for="Quantidade" type="number" min="1" step="1" required /></div>
+        <div class="field"><label for="Motivo">Motivo</label><textarea asp-for="Motivo" maxlength="500" rows="3" required></textarea></div>
+        <div class="actions"><button type="submit">Registrar movimentação</button><a class="button secondary" href="/estoque">Voltar</a></div>
+    </form>
+</section>

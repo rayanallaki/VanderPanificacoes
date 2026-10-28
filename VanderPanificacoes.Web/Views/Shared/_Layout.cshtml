@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>@ViewData["Title"] · Vander Panificações</title><link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" /></head>
+<body>
+@if(User.Identity?.IsAuthenticated == true)
+{
+    var caminho = Context.Request.Path.Value ?? "/";
+    <aside class="sidebar"><a class="brand" href="/"><span class="brand-mark">VP</span><span>VANDER<small>PANIFICAÇÕES</small></span></a><span class="nav-label">OPERAÇÃO</span><nav aria-label="Menu administrativo">
+    @foreach(var link in new[]{("/", "Visão geral"), ("/lotes", "Lotes e pedidos"), ("/estoque", "Estoque"), ("/vendas", "Vendas"), ("/parcelas", "Parcelas")}) {<a class="@((link.Item1=="/"?caminho=="/":caminho.StartsWith(link.Item1))?"active":"")" href="@link.Item1">@link.Item2</a>}
+    <span class="nav-label">CADASTROS</span>
+    @foreach(var tipo in new[]{"produtos","categorias","clientes","vendedores"}) {<a class="@(caminho.StartsWith("/cadastros/"+tipo)?"active":"")" href="/cadastros/@tipo">@Cadastros.Titulos[tipo]</a>}
+    </nav><div class="sidebar-footer"><span>Gestão comercial</span><small>Projeto acadêmico</small></div></aside>
+    <div class="workspace"><header class="topbar"><span>Administração da loja</span><div class="account"><span>@User.Identity.Name</span><form method="post" action="/conta/sair">@Html.AntiForgeryToken()<button class="secondary small" type="submit">Sair</button></form></div></header><main>
+    @if(TempData["Sucesso"] is string sucesso){<div class="notice success" role="status">@sucesso</div>}
+    @RenderBody()
+    </main><footer>Vander Panificações · Rota comercial</footer></div>
+}
+else
+{
+    <header class="login-topbar"><a class="brand dark" href="/"><span class="brand-mark">VP</span><span>VANDER<small>PANIFICAÇÕES</small></span></a><span>Área administrativa</span></header><main class="login-main">@RenderBody()</main>
+}
+@await RenderSectionAsync("Scripts", required: false)
+</body></html>

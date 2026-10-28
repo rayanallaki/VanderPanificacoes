@@ -1,0 +1,19 @@
+@model LoteVm
+@{ var lote = Model.Detalhes["lote"]!.AsObject(); var id = Ui.Id(lote); var recebido = Ui.Texto(lote,"situacao") == "Recebido"; var indice = 0; ViewData["Title"] = $"Lote #{id}"; }
+<div class="page-heading"><div><span class="eyebrow">CONFERÊNCIA DE PEDIDOS</span><h1>Lote #@id</h1><p>@Ui.Texto(lote,"vendedor") · @Ui.Texto(lote,"situacao")</p></div><a class="button secondary" href="/lotes">Voltar aos lotes</a></div>
+<div asp-validation-summary="All" class="validation"></div>
+<form method="post" action="/lotes/@id/@(Model.Previa is null ? "conferir" : "confirmar")">@Html.AntiForgeryToken()
+@foreach(var node in Model.Detalhes["pedidos"]!.AsArray()) { var pedido = node!.AsObject();
+<section class="card spaced"><div class="section-heading"><div><h2>@Ui.Texto(pedido,"cliente")</h2><p>Pedido #@Ui.Id(pedido) · @Ui.Texto(pedido,"condicaoPagamento") · @Ui.Texto(pedido,"formaPagamentoPrevista")</p></div><span class="badge neutral">@Ui.Texto(pedido,"situacao")</span></div><div class="table-wrap"><table><thead><tr><th>Produto</th><th>Preço</th><th>Solicitado</th><th>@(recebido ? "Atender" : "Atendido")</th></tr></thead><tbody>
+@foreach(var itemNode in pedido["itens"]!.AsArray()) { var item = itemNode!.AsObject(); var itemId = Ui.Id(item); var proposta = Model.Itens.Find(i => i.ItemPedidoId == itemId); var qtd = proposta?.QuantidadeAtendida ?? 0;
+<tr><td>@Ui.Texto(item,"nomeProduto")</td><td>@Ui.Moeda(Ui.Valor(item,"precoUnitario"))</td><td>@Ui.Texto(item,"quantidadeSolicitada")</td><td>
+@if(recebido){<input type="hidden" name="Itens[@indice].ItemPedidoId" value="@itemId" /><input class="quantity" type="number" name="Itens[@indice].QuantidadeAtendida" value="@qtd" min="0" max="@Ui.Id(item,"quantidadeSolicitada")" step="1" required readonly="@(Model.Previa is not null)" aria-label="Quantidade atendida de @Ui.Texto(item,"nomeProduto")" /> indice++;}else{@Ui.Texto(item,"quantidadeAtendida")}
+</td></tr> }
+</tbody></table></div>@if(!recebido){<p class="total-line">Total confirmado <strong>@Ui.Moeda(Ui.Valor(pedido,"totalFinal"))</strong></p>}</section> }
+@if(recebido){
+    if(Model.Previa is not null){<section class="card spaced preview"><span class="eyebrow">PRÉVIA CALCULADA</span><h2>Confira os valores antes de confirmar</h2>
+        @foreach(var p in Model.Previa["pedidos"]!.AsArray()){<p>Pedido #@(p!["pedidoId"]) · <strong>@Ui.Moeda(p["totalLiquido"]!.GetValue<decimal>())</strong></p><ul>@foreach(var parcela in p["parcelas"]!.AsArray()){<li>Parcela @(parcela!["numero"]): @Ui.Moeda(parcela["valor"]!.GetValue<decimal>()) · prazo de @(parcela["prazoDias"]) dia(s)</li>}</ul>}
+        <p>A confirmação registra as vendas, baixa o estoque e gera as parcelas em aberto.</p><div class="actions"><button type="submit">Confirmar lote e gerar parcelas</button><button type="submit" class="secondary" formaction="/lotes/@id/revisar">Revisar quantidades</button></div></section>}
+    else{<section class="card"><p>Calcule a prévia para validar o estoque e conferir os valores.</p><div class="actions"><button type="submit">Calcular prévia</button><a class="button danger" href="/lotes/@id/cancelar">Cancelar lote</a></div></section>}
+}
+</form>

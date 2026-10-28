@@ -1,0 +1,4 @@
+@model LoginForm
+@{ ViewData["Title"] = "Entrar"; }
+<div class="login-layout"><section class="login-brand"><span class="eyebrow">VANDER PANIFICAÇÕES</span><h1>Uma boa gestão<br />começa aqui.</h1><p>Da carteira de clientes ao recebimento das vendas, acompanhe a operação da sua loja.</p><div class="brand-note">Rota comercial · Administração</div></section>
+<section class="card login-card"><span class="eyebrow">ACESSO ADMINISTRATIVO</span><h2>Bem-vindo de volta</h2><p>Entre com a conta do administrador.</p><form method="post" action="/conta/entrar">@Html.AntiForgeryToken()<div asp-validation-summary="All" class="validation"></div><label>E-mail<input asp-for="Email" type="email" autocomplete="username" required /></label><label>Senha<input name="Senha" type="password" autocomplete="current-password" required /></label><button type="submit">Entrar no sistema</button></form></section></div>
